@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# uv
+.uv/
+
+# IDE
+.vscode/
+.idea/
+
+# PySide/Qt
+*.qmlc
+*.jsc
+
+# App runtime
+recordings/
+logs/
+*.log
+
+# Bundled ffmpeg binaries (large)
+ffmpeg/

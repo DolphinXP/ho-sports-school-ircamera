@@ -1,0 +1,12 @@
+{
+  "cameras": [
+    {
+      "name": "BigIR-1",
+      "url": "rtsp://localhost:8554/mystream"
+    },
+    {
+      "name": "BigIR-2",
+      "url": "rtsp://localhost:8554/mystream2"
+    }
+  ]
+}

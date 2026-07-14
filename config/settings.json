@@ -1,0 +1,12 @@
+{
+  "last_camera_url": "",
+  "exposure_us": 10,
+  "last_recording_dir": "",
+  "rtsp_transport": "tcp",
+  "rtsp_timeout_us": 5000000,
+  "capture_backend": "ffmpeg",
+  "backend": "ffmpeg",
+  "color_mode": "rainbow",
+  "save_image_dir": "C:\\Users\\acelg\\AppData\\Local\\Temp",
+  "window_geometry": ""
+}
