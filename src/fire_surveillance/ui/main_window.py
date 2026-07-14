@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("九恒科技 - IR 监控系统 | v0.1 | © 2026")
-        self.setMinimumSize(1280, 1024)
+        self.setMinimumSize(1380, 860)
         self.resize(1280, 860)
 
         central = QWidget(objectName="CentralWidget")

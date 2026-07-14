@@ -27,7 +27,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QInputDialog,
     QLabel,
-    QLineEdit,
     QMessageBox,
     QPushButton,
     QRadioButton,
@@ -92,12 +91,10 @@ class CameraControls(QWidget):
         root.addWidget(self._build_exposure_group())
         root.addWidget(self._build_record_group())
         root.addStretch()
-        root.addWidget(self._build_save_group())
 
         self.refresh_cameras()
         self._apply_mode()
         self._restore_settings()
-        self._refresh_save_path_display()
 
         # Poll for playback readiness (duration) when a replay source is open.
         from PySide6.QtCore import QTimer
@@ -193,28 +190,6 @@ class CameraControls(QWidget):
         self._btn_exposure.clicked.connect(self._on_set_exposure)
         g.addWidget(self._btn_exposure)
         self._exposure_group = g
-        return g
-
-    def _build_save_group(self) -> _Group:
-        """Save-image controls (visible in both camera and replay modes)."""
-        g = _Group()
-        self._btn_save_path = self._icon_btn("📂", "选择图像保存路径")
-        self._btn_save_path.clicked.connect(self._on_pick_save_dir)
-        g.addWidget(self._btn_save_path)
-
-        self._save_path_edit = QLineEdit()
-        self._save_path_edit.setReadOnly(True)
-        self._save_path_edit.setMinimumWidth(200)
-        self._save_path_edit.setPlaceholderText("未选择保存路径")
-        self._save_path_edit.setToolTip("图像保存路径（只读，点击左侧文件夹按钮修改）")
-        g.addWidget(self._save_path_edit)
-
-        self._btn_save_img = QPushButton("保存图像")
-        self._btn_save_img.setObjectName("AccentButton")
-        self._btn_save_img.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._btn_save_img.setToolTip("保存当前帧（按当前伪彩模式）到所选路径")
-        self._btn_save_img.clicked.connect(self._on_save_image)
-        g.addWidget(self._btn_save_img)
         return g
 
     def _build_record_group(self) -> _Group:
@@ -363,8 +338,6 @@ class CameraControls(QWidget):
         self._btn_exposure.setEnabled(imaging and is_camera)
 
         self._btn_record.setEnabled(imaging and is_camera)
-        # Save-image works in both modes but only while imaging.
-        self._btn_save_img.setEnabled(imaging)
         if not imaging:
             self._btn_stop_rec.setEnabled(False)
             if self._manager.is_recording():
@@ -419,42 +392,6 @@ class CameraControls(QWidget):
         self._manager.set_exposure(int(self._exposure.value()))
         self._settings.exposure_us = int(self._exposure.value())
         self._settings.save()
-
-    # --- save image -----------------------------------------------------
-    def _refresh_save_path_display(self) -> None:
-        """Sync the read-only save-path textbox with the persisted setting."""
-        path = self._settings.save_image_dir or ""
-        self._save_path_edit.setText(path)
-        self._save_path_edit.setCursorPosition(0)
-        self._btn_save_path.setToolTip(
-            f"图像保存路径：\n{path or '（未选择）'}\n（点击修改）"
-        )
-
-    def _on_pick_save_dir(self) -> None:
-        folder = QFileDialog.getExistingDirectory(
-            self, "选择图像保存路径", self._settings.save_image_dir or ""
-        )
-        if folder:
-            self._settings.save_image_dir = folder
-            self._settings.save()
-            self._refresh_save_path_display()
-
-    def _on_save_image(self) -> None:
-        if not self._manager.is_running():
-            self._error("请先开始成像后再保存图像。", "保存图像")
-            return
-        folder = self._settings.save_image_dir
-        if not folder:
-            folder = QFileDialog.getExistingDirectory(self, "选择图像保存路径", "")
-            if not folder:
-                return
-            self._settings.save_image_dir = folder
-            self._settings.save()
-        path = self._manager.save_current_image(folder)
-        if path:
-            QMessageBox.information(self, "保存图像", f"已保存：\n{path}")
-        else:
-            self._error("保存失败，没有可用的图像帧。", "保存图像")
 
     def _on_start_recording(self) -> None:
         folder = QFileDialog.getExistingDirectory(

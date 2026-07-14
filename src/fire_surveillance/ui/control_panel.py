@@ -8,14 +8,18 @@ configuration.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
+    QFileDialog,
     QFormLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QScrollArea,
     QSpinBox,
@@ -213,6 +217,10 @@ class ControlPanel(QFrame):
         self._color_panel = _PseudoColorPanel()
         layout.addWidget(self._color_panel)
 
+        # Fourth panel: image save controls, beneath the pseudo-color panel.
+        self._save_panel = _SavePanel()
+        layout.addWidget(self._save_panel)
+
         self._select_tab(0)
 
         # Poll for status to refresh the info tab.
@@ -248,6 +256,7 @@ class ControlPanel(QFrame):
         info_tab = self._tabs[0][1]
         if isinstance(info_tab, _CameraInfoTab):
             info_tab.refresh(self._manager)
+        self._save_panel.refresh()
 
 
 class _PseudoColorPanel(QFrame):
@@ -298,6 +307,111 @@ class _PseudoColorPanel(QFrame):
         self._manager.set_color_mode(mode)
         self._settings.color_mode = mode
         self._settings.save()
+
+
+class _SavePanel(QFrame):
+    """Save-image controls: pick a destination folder + save the current frame.
+
+    Works in both camera and replay modes; the save button is enabled only
+    while imaging (polled via :meth:`refresh`).
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setObjectName("Panel")
+        self._manager = CameraManager.instance()
+        self._settings = AppSettings.load()
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(8)
+
+        header = QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(8)
+        title = QLabel("图像保存")
+        title.setObjectName("SectionLabel")
+        header.addWidget(title)
+        # Inline save-result status, shown beside the title instead of a dialog.
+        self._status = QLabel("")
+        self._status.setStyleSheet(f"color:{C.text_tertiary}; font-size:11px;")
+        self._status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        header.addWidget(self._status)
+        header.addStretch()
+        layout.addLayout(header)
+
+        # Folder picker + read-only path display.
+        path_row = QHBoxLayout()
+        path_row.setSpacing(8)
+        self._btn_save_path = QPushButton("📂")
+        self._btn_save_path.setObjectName("IconButton")
+        self._btn_save_path.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_save_path.setFixedSize(36, 36)
+        self._btn_save_path.setToolTip("选择图像保存路径")
+        self._btn_save_path.clicked.connect(self._on_pick_save_dir)
+        path_row.addWidget(self._btn_save_path)
+
+        self._save_path_edit = QLineEdit()
+        self._save_path_edit.setReadOnly(True)
+        self._save_path_edit.setPlaceholderText("未选择保存路径")
+        self._save_path_edit.setToolTip("图像保存路径（只读，点击左侧文件夹按钮修改）")
+        path_row.addWidget(self._save_path_edit, stretch=1)
+        layout.addLayout(path_row)
+
+        self._btn_save_img = QPushButton("保存图像")
+        self._btn_save_img.setObjectName("AccentButton")
+        self._btn_save_img.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_save_img.setToolTip("保存当前帧（按当前伪彩模式）到所选路径")
+        self._btn_save_img.setEnabled(False)
+        self._btn_save_img.clicked.connect(self._on_save_image)
+        layout.addWidget(self._btn_save_img)
+
+        self._refresh_save_path_display()
+
+    def refresh(self) -> None:
+        """Poll-driven enable/disable (called from the control panel timer)."""
+        self._btn_save_img.setEnabled(self._manager.is_running())
+
+    def _refresh_save_path_display(self) -> None:
+        """Sync the read-only save-path textbox with the persisted setting."""
+        path = self._settings.save_image_dir or ""
+        self._save_path_edit.setText(path)
+        self._save_path_edit.setCursorPosition(0)
+        self._btn_save_path.setToolTip(
+            f"图像保存路径：\n{path or '（未选择）'}\n（点击修改）"
+        )
+
+    def _on_pick_save_dir(self) -> None:
+        folder = QFileDialog.getExistingDirectory(
+            self, "选择图像保存路径", self._settings.save_image_dir or ""
+        )
+        if folder:
+            self._settings.save_image_dir = folder
+            self._settings.save()
+            self._refresh_save_path_display()
+
+    def _set_status(self, text: str, color: str, tip: str = "") -> None:
+        """Show the save result inline beside the section title."""
+        self._status.setText(text)
+        self._status.setStyleSheet(f"color:{color}; font-size:11px;")
+        self._status.setToolTip(tip)
+
+    def _on_save_image(self) -> None:
+        if not self._manager.is_running():
+            self._set_status("请先开始成像", C.warning)
+            return
+        folder = self._settings.save_image_dir
+        if not folder:
+            folder = QFileDialog.getExistingDirectory(self, "选择图像保存路径", "")
+            if not folder:
+                return
+            self._settings.save_image_dir = folder
+            self._settings.save()
+        path = self._manager.save_current_image(folder)
+        if path:
+            self._set_status(f"已保存 ✓ {Path(path).name}", C.success, path)
+        else:
+            self._set_status("保存失败：无可用帧", C.danger)
 
 
 def _format_bytes(n: int) -> str:

@@ -6,7 +6,7 @@
   "rtsp_timeout_us": 5000000,
   "capture_backend": "ffmpeg",
   "backend": "ffmpeg",
-  "color_mode": "rainbow",
+  "color_mode": "iron",
   "save_image_dir": "C:\\Users\\acelg\\AppData\\Local\\Temp",
   "window_geometry": ""
 }
