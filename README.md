@@ -1,4 +1,6 @@
-# FireSurveillance (Python)
+# FireSurveillance 改造 (体院拍摄版)
+
+为了到体院拍摄，将原来的火情监测系统改造为**红外 / 热成像摄像头 RTSP 监控 UI**，只保留 UI + 实时 RTSP 视频显示部分。
 
 IR / thermal-camera **RTSP surveillance UI** — UI + live RTSP video display only.
 This is a Python re-implementation of the UI & RTSP-display portion of the

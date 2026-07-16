@@ -1,12 +1,12 @@
 {
-  "last_camera_url": "",
+  "last_camera_url": "rtsp://localhost:8554/mystream",
   "exposure_us": 10,
-  "last_recording_dir": "",
+  "last_recording_dir": "C:/XL/JH",
   "rtsp_transport": "tcp",
   "rtsp_timeout_us": 5000000,
   "capture_backend": "ffmpeg",
   "backend": "ffmpeg",
-  "color_mode": "iron",
+  "color_mode": "raw",
   "save_image_dir": "C:\\Users\\acelg\\AppData\\Local\\Temp",
   "window_geometry": ""
 }

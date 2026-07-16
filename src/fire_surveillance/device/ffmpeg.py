@@ -60,6 +60,15 @@ def _is_rtsp(url: str) -> bool:
     return url.lower().startswith("rtsp://") or url.lower().startswith("rtsps://")
 
 
+def _subprocess_window_kwargs() -> dict:
+    if os.name != "nt":
+        return {}
+    return {
+        "creationflags": subprocess.CREATE_NO_WINDOW,
+        "startupinfo": subprocess.STARTUPINFO(dwFlags=subprocess.STARTF_USESHOWWINDOW),
+    }
+
+
 class FFmpegCamera(ICamera):
     """Camera backed by an ``ffmpeg`` subprocess piping raw frames to stdout."""
 
@@ -154,6 +163,7 @@ class FFmpegCamera(ICamera):
                 stderr=subprocess.PIPE,
                 stdin=subprocess.DEVNULL,
                 bufsize=self.cam_param.frame_size,
+                **_subprocess_window_kwargs(),
             )
         except OSError as exc:
             print(f"[FFmpegCamera] failed to spawn ffmpeg: {exc}")
@@ -214,7 +224,7 @@ class FFmpegCamera(ICamera):
     def _input_options(self, url: str) -> List[str]:
         opts: List[str] = []
         if _is_rtsp(url):
-            opts += ["-rtsp_transport", self._rtsp_transport, "-stimeout", str(self._rtsp_timeout_us)]
+            opts += ["-rtsp_transport", self._rtsp_transport, "-timeout", str(self._rtsp_timeout_us)]
         return opts
 
     def _build_command(self, url: str, seek_sec: float = 0.0) -> List[str]:
@@ -241,7 +251,11 @@ class FFmpegCamera(ICamera):
         ]
         try:
             result = subprocess.run(  # noqa: S603
-                cmd, capture_output=True, text=True, timeout=30
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                **_subprocess_window_kwargs(),
             )
         except (subprocess.TimeoutExpired, OSError) as exc:
             print(f"[FFmpegCamera] ffprobe failed: {exc}")

@@ -255,6 +255,7 @@ class CameraControls(QWidget):
         # 积分 and recording only apply to a live camera; hide them in replay.
         self._exposure_group.setVisible(is_camera)
         self._record_group.setVisible(is_camera)
+        self._btn_pick.setEnabled(not self._is_imaging and not is_camera)
         if not is_camera and self._manager.is_recording():
             self._manager.stop_recording()
 
